@@ -83,3 +83,75 @@ class System {
     }
   }
 }
+
+function assert(name, condition) {
+  console.log(`${condition ? "PASS" : "FAIL"} - ${name}`);
+}
+
+async function runTests() {
+  const system = new System();
+
+  // Create users
+  system.createUser({ userId: "admin", isAdmin: true });
+  system.createUser({ userId: "user-1", isAdmin: false });
+
+  assert("Create admin", system.users.has("admin"));
+
+  assert("Create user", system.users.has("user-1"));
+
+  // Create group
+  system.createGroup({
+    userId: "admin",
+    groupId: "group-1",
+  });
+
+  assert("Admin creates group", system.groups.has("group-1"));
+
+  // Add user
+  system.addUserToGroup({
+    userId: "user-1",
+    groupId: "group-1",
+    adminId: "admin",
+  });
+
+  assert(
+    "Admin adds user to group",
+    system.groups.get("group-1").membersWhichAreIn.has("user-1"),
+  );
+
+  assert(
+    "User has group",
+    system.users.get("user-1").groupsInWhich.has("group-1"),
+  );
+
+  // Duplicate add
+  system.addUserToGroup({
+    userId: "user-1",
+    groupId: "group-1",
+    adminId: "admin",
+  });
+
+  assert(
+    "Duplicate user prevented",
+    system.groups.get("group-1").membersWhichAreIn.size === 1,
+  );
+
+  // Remove
+  system.removeUserFromGroup({
+    userId: "user-1",
+    groupId: "group-1",
+    adminId: "admin",
+  });
+
+  assert(
+    "User removed from group",
+    !system.groups.get("group-1").membersWhichAreIn.has("user-1"),
+  );
+
+  assert(
+    "Group removed from user",
+    !system.users.get("user-1").groupsInWhich.has("group-1"),
+  );
+}
+
+runTests();
