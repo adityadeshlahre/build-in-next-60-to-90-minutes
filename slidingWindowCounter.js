@@ -1,3 +1,5 @@
+import assert from "node:assert";
+
 class System {
   constructor() {
     this.limit = 10;
@@ -15,12 +17,10 @@ class System {
       this.previousWindowCount = 0;
       this.currentWindowCount = 0;
       this.windowStart = Date.now();
-    }
-
-    if (windowsPassed === 1) {
+    } else if (windowsPassed === 1) {
       this.previousWindowCount = this.currentWindowCount;
       this.currentWindowCount = 0;
-      this.windowStart = Date.now();
+      this.windowStart += this.windowSize;
     }
 
     const elapsedNow = Date.now() - this.windowStart;
@@ -37,3 +37,32 @@ class System {
     return true;
   }
 }
+
+const limiter = new System();
+
+// 1. First request
+assert.strictEqual(limiter.allow(), true);
+assert.strictEqual(limiter.getCurrentCount(), 1);
+
+// 2. Fill window
+for (let i = 0; i < 9; i++) {
+  assert.strictEqual(limiter.allow(), true);
+}
+
+assert.strictEqual(limiter.getCurrentCount(), 10);
+
+// 3. 11th request rejected
+assert.strictEqual(limiter.allow(), false);
+
+// 4. 90 seconds passed
+limiter.windowStart -= 90000;
+
+assert.strictEqual(limiter.allow(), true);
+
+// 5. More than 2 windows passed
+limiter.windowStart -= 120000;
+
+assert.strictEqual(limiter.getCurrentCount(), 0);
+assert.strictEqual(limiter.allow(), true);
+
+console.log("All tests passed");
