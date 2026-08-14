@@ -1,4 +1,3 @@
-const { captureRejectionSymbol } = require("node:events");
 const fs = require("node:fs");
 
 const count = 30;
@@ -17,7 +16,7 @@ class MinHeap {
   }
 
   size() {
-    return this.heap.length();
+    return this.heap.length;
   }
 
   peak() {
@@ -34,7 +33,7 @@ class MinHeap {
       let swapIndex = null;
 
       if (leftChildIndex <= lastIndex) {
-        if (this.heap[leftChildIndex] < this.heap[currentIndex]) {
+        if (this.heap[leftChildIndex].value < this.heap[currentIndex].value) {
           swapIndex = leftChildIndex;
         }
       }
@@ -42,13 +41,13 @@ class MinHeap {
       if (rightChildIndex <= lastIndex) {
         if (
           swapIndex === null &&
-          this.heap[rightChildIndex] < this.heap[currentIndex]
+          this.heap[rightChildIndex].value < this.heap[currentIndex].value
         ) {
           swapIndex = rightChildIndex;
         } else if (
           // important
           swapIndex !== null &&
-          this.heap[rightChildIndex] < this.heap[swapIndex]
+          this.heap[rightChildIndex].value < this.heap[swapIndex].value
         ) {
           swapIndex = rightChildIndex;
         }
@@ -64,7 +63,7 @@ class MinHeap {
     let currentIndex = index;
     while (currentIndex > 0) {
       const parentIndex = this.getParentIndex(currentIndex);
-      if (this.heap[currentIndex] < this.heap[parentIndex]) {
+      if (this.heap[currentIndex].value < this.heap[parentIndex].value) {
         this.swap(currentIndex, parentIndex);
         currentIndex = parentIndex;
       } else {
@@ -82,11 +81,11 @@ class MinHeap {
     return Math.floor((index - 1) / 2);
   }
 
-  getLeftChildValue(index) {
+  getLeftChildIndex(index) {
     return 2 * index + 1;
   }
 
-  getRightChildValue() {
+  getRightChildIndex(index) {
     return 2 * index + 2;
   }
 
@@ -113,5 +112,77 @@ class MinHeap {
 const heap = new MinHeap();
 
 class KWaySystem {
-  constructor() {}
+  createChunk() {
+    let fileCount = 0;
+
+    const numbers = fs
+      .readFileSync("./input.txt", { encoding: "utf8" })
+      .split("\n")
+      .map(Number);
+
+    for (let i = 0; i < numbers.length; i += 5) {
+      const chunk = numbers.slice(i, i + 5).sort((a, b) => a - b);
+      console.log(chunk);
+      fs.writeFileSync(`./chunk-${fileCount}.txt`, chunk.join("\n"));
+      fileCount++;
+    }
+  }
+
+  initializeHeap() {
+    let listOfChunks = fs
+      .readdirSync("./")
+      .filter((file) => {
+        return file.startsWith("chunk");
+      })
+      .map((file) => {
+        return `./${file}`;
+      });
+
+    for (const fileName of listOfChunks) {
+      let readFirstNumberFromInsideTheFiles = fs
+        .readFileSync(fileName, { encoding: "utf8" })
+        .split("\n")
+        .map(Number)[0];
+
+      heap.inset({
+        value: readFirstNumberFromInsideTheFiles,
+        chunk: fileName,
+        position: 0,
+      });
+    }
+  }
+
+  merge() {
+    const outputFile = "./output.txt";
+    if (!fs.existsSync(outputFile)) {
+      fs.writeFileSync(outputFile, "");
+    }
+
+    while (heap.size() > 0) {
+      const current = heap.extractMin();
+
+      fs.appendFileSync(outputFile, `${current.value}\n`);
+
+      const values = fs
+        .readFileSync(current.chunk, "utf8")
+        .split("\n")
+        .map(Number);
+
+      const nextPosition = current.position + 1;
+
+      if (nextPosition < values.length) {
+        heap.inset({
+          value: values[nextPosition],
+          chunk: current.chunk,
+          position: nextPosition,
+        });
+      }
+    }
+  }
 }
+
+const system = new KWaySystem();
+
+system.createChunk();
+system.initializeHeap();
+system.merge();
