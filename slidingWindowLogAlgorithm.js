@@ -1,8 +1,43 @@
+const timeStampsLogger = () => {
+  console.log(`[${new Date().toLocaleString()}]`);
+};
 
-const fs = require("node:fs");
+class System {
+  constructor() {
+    this.limit = 5;
+    this.windowSize = 10000;
+    this.requestStore = [];
+  }
 
-fs.writeFileSync("./timeRequestCount.log", numbers.join("\n"));
+  queueTimeStamp(timeStamp) {
+    this.requestStore.push(timeStamp);
+  }
 
-if (fs.existsSync("./timeRequestCount.log")) console.log("OK");
+  dequeueTimeStamp() {
+    return this.requestStore.shift();
+  }
 
+  getCurrentRequestDetails() {
+    return Date.now() - this.windowSize;
+  }
 
+  allow() {
+    const currentTimeStamp = Date.now();
+    const windowBoundary = currentTimeStamp - this.windowSize;
+
+    while (
+      this.requestStore.length > 0 &&
+      this.requestStore[0] <= windowBoundary
+    ) {
+      this.dequeueTimeStamp();
+    }
+
+    if (this.requestStore.length >= this.limit) {
+      return false;
+    }
+
+    this.queueTimeStamp(currentTimeStamp);
+
+    return true;
+  }
+}
