@@ -17,10 +17,6 @@ class System {
     return this.requestStore.shift();
   }
 
-  getCurrentRequestDetails() {
-    return Date.now() - this.windowSize;
-  }
-
   allow() {
     const currentTimeStamp = Date.now();
     const windowBoundary = currentTimeStamp - this.windowSize;
